@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io   # cascade-delete children if you delete root
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/moabdelazem/My_ArgoCD_Applications.git
+    targetRevision: main
+    path: apps
+    directory:
+      recurse: true      # drop a new file in apps/ → auto-picked up
+  destination:
+    server: https://kubernetes.default.svc     # <-- the portability magic
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
