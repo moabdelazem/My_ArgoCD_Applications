@@ -1,0 +1,42 @@
+service:
+  type: NodePort
+  ports:
+    backend: 7007          # container/service port (unchanged)
+  nodePorts:
+    backend: 31007         # the externally reachable NodePort
+
+backstage:
+  extraEnvVars:
+    - name: POSTGRES_USER
+      valueFrom:
+        secretKeyRef: { name: backstage-db-app, key: username }
+    - name: POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef: { name: backstage-db-app, key: password }
+    - name: BACKEND_SECRET
+      valueFrom:
+        secretKeyRef: { name: backstage-backend, key: backend-secret }
+
+  appConfig:
+    app:
+      baseUrl: http://NODE_IP:31007
+    backend:
+      baseUrl: http://NODE_IP:31007
+      listen:
+        port: 7007
+      cors:
+        origin: http://NODE_IP:31007
+      auth:
+        keys:
+          - secret: ${BACKEND_SECRET}
+      database:
+        client: pg
+        connection:
+          host: backstage-db-rw.backstage.svc.cluster.local
+          port: 5432
+          user: ${POSTGRES_USER}
+          password: ${POSTGRES_PASSWORD}
+
+# keep the bundled Bitnami Postgres OFF — we're using CNPG
+postgresql:
+  enabled: false
