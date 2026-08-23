@@ -4,7 +4,7 @@ metadata:
   name: backstage
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "2"      # after backstage-db so its DB secret exists
+    argocd.argoproj.io/sync-wave: "2"      # after backstage-db (wave 1) so its DB secret exists
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -12,7 +12,7 @@ spec:
   source:
     repoURL: https://backstage.github.io/charts
     chart: backstage
-    targetRevision: 2.10.0
+    targetRevision: 2.10.0                  # check for newer before pinning
     helm:
       values: |
         service:
@@ -21,28 +21,45 @@ spec:
             backend: 7007
           nodePorts:
             backend: 31007
+
         backstage:
           extraEnvVars:
             - name: POSTGRES_USER
-              valueFrom: { secretKeyRef: { name: backstage-db-app, key: username } }
+              valueFrom:
+                secretKeyRef:
+                  name: backstage-db-app
+                  key: username
             - name: POSTGRES_PASSWORD
-              valueFrom: { secretKeyRef: { name: backstage-db-app, key: password } }
+              valueFrom:
+                secretKeyRef:
+                  name: backstage-db-app
+                  key: password
             - name: BACKEND_SECRET
-              valueFrom: { secretKeyRef: { name: backstage-backend, key: backend-secret } }
+              valueFrom:
+                secretKeyRef:
+                  name: backstage-backend
+                  key: backend-secret
+
           appConfig:
-            app: { baseUrl: http://NODE_IP:31007 }
+            app:
+              baseUrl: "http://NODE_IP:31007"
             backend:
-              baseUrl: http://NODE_IP:31007
-              listen: { port: 7007 }
-              cors: { origin: http://NODE_IP:31007 }
-              auth: { keys: [ { secret: ${BACKEND_SECRET} } ] }
+              baseUrl: "http://NODE_IP:31007"
+              listen:
+                port: 7007
+              cors:
+                origin: "http://NODE_IP:31007"
+              auth:
+                keys:
+                  - secret: "${BACKEND_SECRET}"
               database:
                 client: pg
                 connection:
                   host: backstage-db-rw.backstage.svc.cluster.local
                   port: 5432
-                  user: ${POSTGRES_USER}
-                  password: ${POSTGRES_PASSWORD}
+                  user: "${POSTGRES_USER}"
+                  password: "${POSTGRES_PASSWORD}"
+
         postgresql:
           enabled: false
   destination:
@@ -50,5 +67,8 @@ spec:
     namespace: backstage
   syncPolicy:
     automated: { prune: true, selfHeal: true }
-    retry: { limit: 5, backoff: { duration: 10s, factor: 2, maxDuration: 2m } }
-    syncOptions: [ CreateNamespace=true ]
+    retry:
+      limit: 5
+      backoff: { duration: 10s, factor: 2, maxDuration: 2m }
+    syncOptions:
+      - CreateNamespace=true
