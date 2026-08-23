@@ -2,14 +2,15 @@ apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
   name: backstage-db
-  namespace: backstage
+  # no namespace — ArgoCD applies it into the app's destination namespace (backstage)
 spec:
   instances: 1
   storage:
     size: 1Gi
+    storageClass: local-path
   bootstrap:
     initdb:
       database: backstage
       owner: backstage
       postInitSQL:
-        - ALTER ROLE backstage CREATEDB     # <-- lets Backstage create its per-plugin DBs
+        - ALTER ROLE backstage CREATEDB  
