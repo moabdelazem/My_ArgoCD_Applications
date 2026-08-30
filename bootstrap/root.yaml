@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: root
   namespace: argocd
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io   # cascade-delete children if you delete root
 spec:
   project: default
   source:
