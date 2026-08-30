@@ -78,6 +78,7 @@ spec:
 
           appConfig:
             app:
+              title: "Backstage"
               baseUrl: "http://backstage.localhost"
             organization:
               name: "My Org"
