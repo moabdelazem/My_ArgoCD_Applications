@@ -20,13 +20,17 @@ Backstage reaches the database at `backstage-postgres.backstage.svc.cluster.loca
 and reads its credentials from the `backstage-postgres` secret through
 `extraEnvVars`.
 
+The catalog is seeded from `manifests/backstage/catalog-entities.yaml`, mounted
+into the pod at `/app/catalog` — no egress to github.com at startup. Guest
+sign-in maps to `user:default/guest` from that same file.
+
 ### Before syncing
 
-1. **Passwords** — replace `REPLACE_ME_...` in
-   `manifests/backstage/postgres.yaml` (Postgres password) and
-   `manifests/backstage/backend-secret.yaml` (Backstage signing key,
-   `openssl rand -base64 32`). Both sit in git in plain text; for real clusters
-   use Sealed Secrets / External Secrets, keeping the same names and keys.
+1. **Postgres password** — replace `REPLACE_ME_...` in
+   `manifests/backstage/postgres.yaml`. The Backstage signing key in
+   `backend-secret.yaml` is already generated. Both sit in git in plain text;
+   for real clusters use Sealed Secrets / External Secrets, keeping the same
+   names and keys.
 2. Nothing — the URL is `http://backstage.localhost`, which browsers resolve to
    `127.0.0.1` with no setup. If the cluster runs on another machine, add
    `<node-ip> backstage.localhost` to `/etc/hosts` on the machine you browse

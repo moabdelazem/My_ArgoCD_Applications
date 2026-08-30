@@ -58,11 +58,25 @@ spec:
           containerPorts:
             backend: 7007
 
+          # Seed catalog from manifests/backstage/catalog-entities.yaml
+          extraVolumes:
+            - name: catalog-entities
+              configMap:
+                name: backstage-catalog-entities
+          extraVolumeMounts:
+            - name: catalog-entities
+              mountPath: /app/catalog
+              readOnly: true
+
           resources:
             requests: { cpu: 200m, memory: 512Mi }
             limits:   { memory: 1Gi }
 
           extraEnvVars:
+            # Names the plugins still initialising when readiness returns 503.
+            # Drop back to "info" once startup is clean.
+            - name: LOG_LEVEL
+              value: debug
             # From the backstage-postgres secret in manifests/backstage/postgres.yaml.
             - name: POSTGRES_USER
               valueFrom:
@@ -109,14 +123,21 @@ spec:
               providers:
                 # Guest sign-in so the UI is usable immediately.
                 # Replace with a real provider (github, oidc, ...) before exposing this.
+                # userEntityRef must match a User in the catalog — the seed
+                # ConfigMap provides user:default/guest.
                 guest:
                   dangerouslyAllowOutsideDevelopment: true
+                  userEntityRef: user:default/guest
+                  ownershipEntityRefs:
+                    - group:default/guests
             catalog:
+              rules:
+                - allow: [Component, System, API, Resource, Location, Group, User, Domain, Template]
               locations:
-                - type: url
-                  target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/all.yaml
+                - type: file
+                  target: /app/catalog/entities.yaml
                   rules:
-                    - allow: [Component, System, API, Resource, Location, Group, User, Domain, Template]
+                    - allow: [Component, System, API, Resource, Location, Group, User, Domain]
 
         # Postgres comes from the backstage-db Application, not the chart's subchart.
         postgresql:

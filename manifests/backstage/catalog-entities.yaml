@@ -1,0 +1,50 @@
+# Seed catalog, mounted into the Backstage pod at /app/catalog.
+# Replaces the upstream example URL so startup does not depend on egress
+# to github.com (an unreachable or rate-limited location fails catalog init).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backstage-catalog-entities
+data:
+  entities.yaml: |
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: User
+    metadata:
+      name: guest
+      namespace: default
+    spec:
+      profile:
+        displayName: Guest
+      memberOf: [guests]
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: Group
+    metadata:
+      name: guests
+      namespace: default
+    spec:
+      type: team
+      profile:
+        displayName: Guests
+      children: []
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: System
+    metadata:
+      name: examples
+      namespace: default
+    spec:
+      owner: group:default/guests
+    ---
+    apiVersion: backstage.io/v1alpha1
+    kind: Component
+    metadata:
+      name: example-website
+      namespace: default
+      description: Placeholder component so the catalog is not empty
+    spec:
+      type: website
+      lifecycle: experimental
+      owner: group:default/guests
+      system: system:default/examples
