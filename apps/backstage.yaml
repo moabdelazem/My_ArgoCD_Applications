@@ -12,7 +12,7 @@ spec:
   source:
     repoURL: https://backstage.github.io/charts
     chart: backstage
-    targetRevision: 2.10.0                 # check for newer before bumping
+    targetRevision: 2.8.1              # check for newer before bumping
     helm:
       releaseName: backstage
       values: |
@@ -98,6 +98,19 @@ spec:
             app:
               title: "Backstage"
               baseUrl: "http://backstage.localhost"
+              # The demo image runs the NEW frontend system, which installs
+              # plugin features by config-driven discovery. Without this, a
+              # plugin's UI renders but its APIs are never registered — that is
+              # the "No implementation available for apiRef{...}" crash.
+              packages: all
+              support:
+                url: https://github.com/backstage/backstage/issues
+                items:
+                  - title: Issues
+                    icon: github
+                    links:
+                      - url: https://github.com/backstage/backstage/issues
+                        title: GitHub Issues
             organization:
               name: "My Org"
             backend:
@@ -112,6 +125,9 @@ spec:
               auth:
                 keys:
                   - secret: "${BACKEND_SECRET}"
+                # The demo backend still needs this; upstream app-config.yaml
+                # carries the same line for its own backend to work.
+                dangerouslyDisableDefaultAuthPolicy: true
               database:
                 client: pg
                 connection:
@@ -120,6 +136,7 @@ spec:
                   user: "${POSTGRES_USER}"
                   password: "${POSTGRES_PASSWORD}"
             auth:
+              environment: development
               providers:
                 # Guest sign-in so the UI is usable immediately.
                 # Replace with a real provider (github, oidc, ...) before exposing this.
