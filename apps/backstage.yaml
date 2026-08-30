@@ -42,13 +42,17 @@ spec:
             # cert-manager.io/cluster-issuer: letsencrypt
             # secretName: backstage-tls
 
-        # The upstream chart ships no app of your own — this is the community
-        # demo image. Swap it for the image built from your Backstage repo.
+        # The upstream chart ships no app of your own — this is the Backstage
+        # project's demo image, pinned to a released tag ("latest" on this repo
+        # is an unreleased build). Swap it for an image built from your own
+        # Backstage repo (npx @backstage/create-app) as soon as you have one:
+        # which frontend plugins are wired in is fixed at image build time and
+        # cannot be changed from appConfig.
         backstage:
           image:
             registry: ghcr.io
             repository: backstage/backstage
-            tag: latest
+            tag: "1.45.0"
             pullPolicy: IfNotPresent
 
           containerPorts:
