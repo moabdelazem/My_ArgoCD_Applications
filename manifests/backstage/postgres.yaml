@@ -1,0 +1,95 @@
+# Plain single-instance Postgres for Backstage.
+# Applied by the "backstage-db" Application into the "backstage" namespace.
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backstage-postgres
+type: Opaque
+stringData:
+  # !! PLACEHOLDER — replace before you sync, this value is in git in plain text.
+  # Generate one with:  openssl rand -base64 24
+  password: "REPLACE_ME_openssl_rand_base64_24"
+  username: "backstage"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backstage-postgres
+  labels:
+    app: backstage-postgres
+spec:
+  clusterIP: None                # headless: DNS points straight at the pod
+  selector:
+    app: backstage-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: backstage-postgres
+  labels:
+    app: backstage-postgres
+spec:
+  serviceName: backstage-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backstage-postgres
+  template:
+    metadata:
+      labels:
+        app: backstage-postgres
+    spec:
+      securityContext:
+        fsGroup: 999             # postgres uid/gid in the official image
+        runAsUser: 999
+        runAsGroup: 999
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: postgres
+              containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef: { name: backstage-postgres, key: username }
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: backstage-postgres, key: password }
+            - name: POSTGRES_DB
+              value: backstage
+            # Required when the PVC is mounted at /var/lib/postgresql/data:
+            # initdb refuses to run in a directory that already has lost+found.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d backstage"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d backstage"]
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits:   { memory: 512Mi }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 2Gi

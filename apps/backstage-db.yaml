@@ -4,9 +4,7 @@ metadata:
   name: backstage-db
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "1"
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
+    argocd.argoproj.io/sync-wave: "0"      # after local-path (-1), before backstage (1)
 spec:
   project: default
   source:
@@ -15,8 +13,11 @@ spec:
     path: manifests/backstage
   destination:
     server: https://kubernetes.default.svc
-    namespace: backstage
+    namespace: backstage                   # same ns as Backstage, so its secrets are mountable
   syncPolicy:
     automated: { prune: true, selfHeal: true }
-    retry: { limit: 5, backoff: { duration: 10s, factor: 2, maxDuration: 2m } }
-    syncOptions: [ CreateNamespace=true ]
+    retry:
+      limit: 5
+      backoff: { duration: 10s, factor: 2, maxDuration: 2m }
+    syncOptions:
+      - CreateNamespace=true
